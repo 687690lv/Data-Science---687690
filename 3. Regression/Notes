@@ -1,0 +1,44 @@
+setwd("H:/My Drive/Studies/Master/Courses/DTS/4. RStudio/Data")
+
+#Regression
+
+oj <-read.csv("oj.csv")
+
+
+##1. Linear regression
+
+summary(glm(log(sales)~brand+log(price), data=oj)) #summary of results of the regression
+x<-model.matrix(~brand+log(price), data=oj); head(x) #matrix with values of regressors, accounting for categorical variables (e.g., dominicks is the reference category)
+
+#Change reference category
+oj$brand = as.factor(oj$brand)
+oj$mybrand = relevel(oj$brand, "tropicana") #set "tropicana" as reference category
+x <- model.matrix(~ mybrand + log(price), data=oj); head(x)
+
+summary(glm(log(sales) ~ . -feat, data=oj)) #regress against all variables except for feat
+glm(log(sales) ~ brand + log(price), data=oj) #where coefficients of price is elasticity due to log forms
+glm(log(sales) ~ log(price)*brand*feat, data=oj) #all possible interactions of regressors
+
+reg<-glm(log(sales) ~ brand + log(price), data=oj)
+fitted_values<-predict(reg, newdata=oj); head(fitted_values); tail(fitted_values)
+
+
+
+#2. Logistic regression
+
+email <-read.csv("spam.csv")
+View(email)
+colnames(email) #name of variables
+
+reg<-glm(spam ~ .,data=email, family="binomial") #a logistic regression (non-linear logit probability model)
+exp(coef(reg)["word_table"]) #Factor interpretation: Spam odds increases by a factor of 1.3 if the email containts the word "table".
+
+predict(reg, newdata=email[c(3, 222, 1000),], type="response") #predicted probabilities (fitted values) for observation 3, 222, and 1,000.
+
+
+
+#3. Deviance and likelihood
+
+D <- summary(reg)$deviance; D #Extract residual deviance from results of regression
+D0 <- summary(reg)$null.deviance #Extracting null deviance from results of regression
+R2 <- 1 - D/D0; R2 #Computing R2 using deviances
