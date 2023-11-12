@@ -1,0 +1,53 @@
+
+##1. Experimentation of Quantification
+
+##We will see what happens when the size of the resamples of the Bootstrap is different from the size of the original sample (10,000)
+
+##First we set a relative low resample size (1000)
+nr<-5000
+v<-c()
+sr<-1000
+
+for (i in 1:nr){
+  resample<-sample.int(sr, replace=TRUE)
+  v=c(v,mean(browser$spend[resample]))
+}
+
+low_sr<-hist(v, col="red")
+
+##Then we set a relative high resample size (10,000+1)
+nr<-5000
+v<-c()
+sr<-10001
+
+for (i in 1:nr){
+  resample<-sample.int(sr, replace=TRUE)
+  v=c(v,mean(browser$spend[resample]))
+}
+
+high_sr<-hist(v, col="blue")
+
+##Apparently, the mean is more skewed for relatively low compared to high resample size.
+
+
+
+##2. Experimentation of FDR
+
+###We will see what happens when the FDR target increases, from 0.1 to 0.5.
+
+reg<-glm(FAIL~.,data=SC, family="binomial") #regress a binomial model (non-linear probability model), disregard error
+pval<-summary(reg)$coef[-1,4] #the fourth column corresponds to p-value
+
+hist(pval, xlab="p-value", main="My title", col=3) #the title is named by main.
+m<-length(coef(reg))-1
+
+pval_rank<-rank(pval) #a vector with the ranking position of p-values (from 1 to m).
+
+q<-0.5 #FDR target
+m<-length(coef(reg))-1 #number of test, -1 to omit constant
+
+reject<-ifelse(pval<(q/m)*pval_rank,1,0) #output of the algorithm, variables with 1 in this vector will be kept.
+reject<-ifelse(pval<(q/m)*pval_rank,3,7) #for plotting, different coding will be used
+
+plot(pval_rank,pval, pch=16, col=reject) #plot solid dots (pch=16) with different colors by rejection.
+lines(pval_rank,pval_rank*(q/m))
