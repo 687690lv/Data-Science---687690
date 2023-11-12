@@ -1,0 +1,80 @@
+
+#Set working directory
+setwd("H:/My Drive/Studies/Master/Courses/DTS/4. RStudio/Data")
+
+
+#Load data
+browser <-read.csv("web-browsers.csv")
+
+
+#Dimension, number of rows and columns
+dim(browser)
+nrow(browser)
+ncol(browser)
+
+
+#Observations from 1 to 4 of variable 2 (as Offset in Excel)
+browser [1:4,2]
+
+
+#View all data in a separate window (as browse in Stata)
+View(browser)
+
+
+#Retrieve categories
+categories<-factor(browser$race) #first a factor should be created
+levels(categories)
+
+#Table categorical variables
+table(browser$race)
+
+#View 6 first and last rows of data in console
+head(browser)
+tail(browser)
+
+
+#Descriptive statistics (as summarize in Stata)
+summary(browser)
+summary(browser$spend)
+
+#Moments of variables
+mean(browser$spend)
+var_spend<-var(browser$spend)
+sqrt(var_spend)
+sd(browser$spend)
+
+
+#Histogram
+hist(browser$spend) #graphs are overlayed
+
+
+#Boxplot
+plot(browser$spend)
+
+
+#Regression
+summary(glm(log(spend)~anychildren+broadband+hispanic, data=browser))
+spendy <- glm(log(spend) ~ . -id, data=browser) #regress agains all variables except for id
+full <- glm(FAIL ~ ., data=SC, family=binomial) #logistic model
+glm(log(sales) ~ brand + log(price), data=oj) #for elasticity
+
+
+#Assign values to scalars, vectors, and matrices
+A<-2
+B<-6
+
+v <- c(2,4,6)
+w <- c(1,3,2)
+
+X<-matrix(1:9, nrow=3,ncol=3)
+
+
+#Display objects and operations
+B
+A*B
+
+w
+v*w
+
+X
+X*v
