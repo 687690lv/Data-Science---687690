@@ -1,0 +1,27 @@
+Experimentation
+
+###We will see how deviance/R2 changes when variables are dropped applying the HB algorithm? Ask professor Kapoor.
+
+###We will see how deviance/R2 changes when only the top 5 and top 10 variables are regarded, in terms of p-value ranking.
+
+pval<-summary(reg)$coef[-1,4]
+sort(rank(pval))
+
+reg_t5<-glm(spam ~ word_hp+char_exclaim+char_dollar+word_remove+word_free,data=email, family="binomial")
+D_t5 <- summary(reg_t5)$deviance
+D0_t5 <- summary(reg_t5)$null.deviance
+R2_t5 <- 1 - D_t5/D0_t5
+
+
+reg_t10<-glm(spam ~ word_hp+char_exclaim+char_dollar+word_remove+word_free+word_george+word_edu+word_our+word_money+word_re,data=email, family="binomial")
+D_t10 <- summary(reg_t10)$deviance
+D0_t10 <- summary(reg_t10)$null.deviance
+R2_t10 <- 1 - D_t10/D0_t10
+
+R2_t5/R2
+R2_t10/R2
+
+R2_t10/R2_t5
+
+
+####Apparently, the 5 variables before the top 5 have a marginal contribution to the fit of the model.
