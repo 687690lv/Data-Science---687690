@@ -1,0 +1,142 @@
+
+#1. Quantification: frequentist method and The Bootstrap
+
+browser <-read.csv("web-browsers.csv")
+
+##1.1.Mean
+
+###Frequentist method
+mean_spend<-mean(browser$spend) #center of the theoretically assumed normal distribution
+mean_spend
+
+n<-nrow(browser)
+var_spend<-var(browser$spend)/n #dispersion of the theoretically assumed normal distribution
+sd_spend<-sqrt(var_spend)
+sd_spend
+
+summary (browser$spend) #we are only interested in values with relevant probability, 1,500 to 2,500
+
+x<-seq(1500, 2500) #set the x-axes between specific values
+y<-dnorm(x, mean=mean_spend, sd=sd_spend) #set y as a normal distribution with a certain mean and s.d.
+plot(x,y)
+lines(x,y, col="red") #plot y and x
+
+####Assuming a normal distribution for the mean, the mathematically built s.d. of the mean quantifies uncertainty.
+
+
+###The Bootstrap
+
+nr<-5000 #number of resamples
+v<-c() #a vector of "nr" rows containing mean of resamples
+sr<-nrow(browser) #should be always equal to the size of the original sample?
+
+for (i in 1:nr){
+  resample<-sample.int(sr, replace=TRUE) #take a resample of the original sample of size "sr", with replacement to generate variability
+  v=c(v,mean(browser$spend[resample])) #store the mean of the resample in the vector
+  }
+
+sd(v) #s.d. of vector containing "nr" resamples. It will change for every loop run as resamples are at random.
+
+####The computed s.d. of resample means quantifies uncertainty of the mean.
+
+
+###Compare methods by frequency of means. Apparently, values around the center are less frequent in the Bootstrap approach.
+
+h_v<-hist(v) #illustrates frequency of means with the Bootstrap.
+x<-seq(min(v), max(v)) #an x-axes ready to overlay frequency from theoretical normal distribution of the mean.
+y<-dnorm(x, mean=mean_spend, sd=sd_spend) #density function of a normal distribution
+y<-y*diff(h_v$mids[1:2])*n #Frequency=density*differential of x*number of observations
+lines(x,y,col="green") #overlay a theoretical on a bootstrap frequency for means.
+
+
+##1.2. Coefficients
+
+###Frequentist method
+
+reg<-glm(log(spend)~broadband+anychildren, data=browser)
+summary(reg)
+mean_beta<-coef(reg)["broadband"] #center of the theoretically assumed normal distribution
+sd_beta <- summary(reg)$coefficients["broadband", "Std. Error"] #dispersion of the theoretically assumed normal distribution
+
+x<-seq(0, 1, 0.01) #set the x-axes between specific values {0,1} separated by 0.01
+y<-dnorm(x, mean=mean_beta, sd=sd_beta) #set y as a normal distribution with a certain mean and s.d.
+plot(x,y)
+lines(x,y, col="red") #plot y and x
+
+####Assuming a normal distribution for the coefficients, the mathematically built s.d. (standard errors) of the coefficients quantifies uncertainty.
+
+
+###The Bootstrap
+
+nr<-5000 #number of resamples
+v<-c() #a matrix of "nr" rows and "k" (number of independent variables) columns containing coefficients of the regression ran on resample
+sr<-nrow(browser)
+
+for (i in 1:nr){
+  resample<-sample.int(sr, replace=TRUE)
+  reg<-glm(log(spend)~broadband+anychildren, data=browser[resample,])
+  v<-rbind(v,coef(reg)) #store coefficients of every variable in the matrix
+}
+
+head(v)
+
+cov(v[,"broadband"],v[,"anychildren"]) #covariation of coefficients may be employed for multiple parameter testing. However, the Bootstrap may fail for this type of uncertainty (multidimmensional)
+
+sd(v[,"broadband"]) #correspond to the resample coefficients of broadband.
+
+####The computed s.d. of resample coefficients quantifies uncertainty of the coefficients, an alternative for standard errors.
+
+
+###Compare methods by frequency of coefficients. Apparently, values around the center are less frequent in the Bootstrap approach.
+
+h_v<-hist(v[,"broadband"]) #illustrates frequency of coefficients of broadband with the Bootstrap.
+x<-seq(min(v[,"broadband"]), max(v[,"broadband"]), 0.01)
+y<-dnorm(x, mean=mean_beta, sd=sd_beta)
+y<-y*diff(h_v$mids[1:2])*n
+lines(x,y,col="green")
+
+
+
+
+#2. False Discovery Rate by the BH Algorithm
+
+##2.1. Linear regression
+
+browser <-read.csv("web-browsers.csv")
+
+reg<-glm(log(spend)~.-id, data=browser) #regress all variables in data set except id.
+round(summary(reg)$coef,4) #summarize results only for coefficients and round to 4 decimals.
+pval<-summary(reg)$coef[-1,"Pr(>|t|)"] #extract p-values of coefficients of all variables except for the constant (-1)
+pval_rank<-rank(pval) #a vector with the ranking position of p-values (from 1 to m).
+
+q<-0.1 #FDR target
+m<-length(coef(reg))-1 #number of test, -1 to omit constant
+
+reject<-ifelse(pval<(q/m)*pval_rank,1,0) #output of the algorithm, variables with 1 in this vector will be kept.
+reject<-ifelse(pval<(q/m)*pval_rank,4,2) #for plotting, different coding will be used
+
+plot(pval_rank,pval, pch=16, col=reject) #plot solid dots (pch=16) with different colors by rejection.
+lines(pval_rank,pval_rank*(q/m))
+
+
+##2.2. Logistic regression
+
+SC <-read.csv("semiconductor.csv")
+
+reg<-glm(FAIL~.,data=SC, family="binomial") #regress a binomial model (non-linear probability model), disregard error
+pval<-summary(reg)$coef[-1,4] #the fourth column corresponds to p-value
+
+hist(pval, xlab="p-value", main="My title", col=3) #the title is named by main.
+m<-length(coef(reg))-1
+
+pval_rank<-rank(pval) #a vector with the ranking position of p-values (from 1 to m).
+
+q<-0.1 #FDR target
+m<-length(coef(reg))-1 #number of test, -1 to omit constant
+
+reject<-ifelse(pval<(q/m)*pval_rank,1,0) #output of the algorithm, variables with 1 in this vector will be kept.
+reject<-ifelse(pval<(q/m)*pval_rank,4,2) #for plotting, different coding will be used
+
+plot(pval_rank,pval, pch=16, col=reject) #plot solid dots (pch=16) with different colors by rejection.
+lines(pval_rank,pval_rank*(q/m))
+
